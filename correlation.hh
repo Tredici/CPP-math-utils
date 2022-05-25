@@ -38,8 +38,10 @@ namespace math::statistics
         // Calculate the Pearson Correlation Coefficient
         // with the accumulated data
         auto compute() const {
-            return ( sum_prod - (sum_1*sum_2)/count )
-                / sqrt( (sum_1_squared - (sum_1*sum_1 / count)) * (sum_2_squared - (sum_2*sum_2 / count)) );
+            const auto num = ( sum_prod - (sum_1*sum_2)/count );
+            const auto den = (sum_1_squared - (sum_1*sum_1 / count)) * (sum_2_squared - (sum_2*sum_2 / count));
+            // check for div by 0
+            return den ?  num / sqrt( den ) : 0;
         }
 
         long long count{};
