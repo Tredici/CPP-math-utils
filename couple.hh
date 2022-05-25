@@ -1,10 +1,11 @@
+
+#ifndef COUPLE
+#define COUPLE
+
 #include <ostream>
 #include <utility>
 #include <optional>
 #include <stdexcept>
-
-#ifndef COUPLE
-#define COUPLE
 
 namespace math::sets
 {
