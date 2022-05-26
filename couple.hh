@@ -97,6 +97,14 @@ namespace math::sets
             return this->n == c.n && this->i == c.i;
         }
 
+        operator std::pair<int,int>() const {
+            return as_pair();
+        }
+
+        std::pair<int,int> as_pair() const {
+            return {_1,_2};
+        }
+
         bool last() const { return _last; }
         bool finished() const { return _finished; }
 
