@@ -47,6 +47,17 @@ namespace math::statistics
             return den ?  num / sqrt( den ) : 0;
         }
 
+        // Fastest way to add two more elements
+        auto& accumulate(double v_1, double v_2) {
+            this->sum_1 += v_1;
+            this->sum_2 += v_2;
+            this->sum_1_squared += v_1*v_1;
+            this->sum_2_squared += v_2*v_2;
+            this->sum_prod += v_1*v_2;
+            ++this->count;
+            return *this;
+        }
+
         long long count{};
         double sum_1{};
         double sum_2{};
