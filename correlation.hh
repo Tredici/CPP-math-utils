@@ -74,11 +74,13 @@ namespace math::statistics
             throw std::invalid_argument("Arguments must have the same length, found len(v1)="s + std::to_string(v1.size()) + ", len(v2)=" + std::to_string(v2.size()));
         }
         for (decltype(v1.size()) i{}; i!=v1.size(); ++i) {
-            ans.sum_1 += v1[i];
-            ans.sum_2 += v2[i];
-            ans.sum_1_squared += v1[i]*v1[i];
-            ans.sum_2_squared += v2[i]*v2[i];
-            ans.sum_prod += v1[i]*v2[i];
+            const auto v_1 = v1[i];
+            const auto v_2 = v2[i];
+            ans.sum_1 += v_1;
+            ans.sum_2 += v_2;
+            ans.sum_1_squared += v_1*v_1;
+            ans.sum_2_squared += v_2*v_2;
+            ans.sum_prod += v_1*v_2;
         }
         ans.count = v1.size();
         return ans;
