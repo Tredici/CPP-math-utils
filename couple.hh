@@ -58,6 +58,9 @@ namespace math::sets
             }
             auto tmp = pair(n, i);
             _1 = tmp.first; _2 = tmp.second;
+            if (n == 2) {
+                _last = true;
+            }
         }
 
         int first() const { return _1; }
