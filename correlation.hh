@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <utility>
+#include <valarray>
 
 namespace math::statistics
 {
@@ -94,7 +95,7 @@ namespace math::statistics
     class multicolumn_pcc_accumulator {
     private:
         const int N;
-        std::vector<pcc_partial> partials;
+        std::valarray<pcc_partial> partials;
     public:
         multicolumn_pcc_accumulator(int N)
         : N{N}, partials((N-1)*N/2)
@@ -110,7 +111,7 @@ namespace math::statistics
                 using namespace std::literals;
                 throw std::runtime_error("Wrong number of columns received, expected "s + std::to_string(N) + " found "s + std::to_string(row.size()));
             }
-            auto partial_iterator = partials.begin();
+            auto partial_iterator = std::begin(partials);
             for (int i{}; i!=N-1; ++i) {
                 for (int j{i+1}; j!=N; ++j) {
                     partial_iterator->accumulate(row[i], row[j]);
@@ -120,11 +121,30 @@ namespace math::statistics
             return *this;
         }
 
+        auto& operator+=(const multicolumn_pcc_accumulator& o) {
+            if (N != o.N) {
+                using namespace std::literals;
+                throw std::runtime_error("Size mismatch, this->N = "s + std::to_string(N) + ", other.N = "s + std::to_string(o.N));
+            }
+            partials += o.partials;
+            return *this;
+        }
+
+        auto operator+(const multicolumn_pcc_accumulator& o) const {
+            if (N != o.N) {
+                using namespace std::literals;
+                throw std::runtime_error("Size mismatch, this->N = "s + std::to_string(N) + ", other.N = "s + std::to_string(o.N));
+            }
+            auto ans = *this;
+            ans += o;
+            return ans;
+        }
+
         // return a map containing all
         auto results() const {
             // use un'ordered map to sped up data access
             std::map<std::pair<int,int>,double> ans;
-            auto partial_iterator = partials.begin();
+            auto partial_iterator = std::begin(partials);
             for (int position{}, i{}; i!=N-1; ++i) {
                 for (int j{i+1}; j!=N; ++j, ++position) {
                     ans[std::make_pair(i,j)] = partial_iterator->compute();
