@@ -6,6 +6,8 @@
 #include <vector>
 #include <stdexcept>
 #include <string>
+#include <map>
+#include <utility>
 
 namespace math::statistics
 {
@@ -85,6 +87,53 @@ namespace math::statistics
         ans.count = v1.size();
         return ans;
     }
+
+    // This class has been conceived to easily
+    // calculate PCC on all pairs of columns in
+    // a large dataset
+    class multicolumn_pcc_accumulator {
+    private:
+        const int N;
+        std::vector<pcc_partial> partials;
+    public:
+        multicolumn_pcc_accumulator(int N)
+        : N{N}, partials((N-1)*N/2)
+        {
+            if (N < 2) {
+                using namespace std::literals;
+                std::invalid_argument("N must be at least 2, found "s + std::to_string(N));
+            }
+        }
+
+        auto& accumulate(const std::vector<double>& row) {
+            if (row.size() != N) {
+                using namespace std::literals;
+                throw std::runtime_error("Wrong number of columns received, expected "s + std::to_string(N) + " found "s + std::to_string(row.size()));
+            }
+            auto partial_iterator = partials.begin();
+            for (int position{}, i{}; i!=N-1; ++i) {
+                for (int j{i+1}; j!=N; ++j, ++position) {
+                    partials[position].accumulate(row[i], row[j]);
+                    ++partial_iterator;
+                }
+            }
+            return *this;
+        }
+
+        // return a map containing all
+        auto results() const {
+            // use un'ordered map to sped up data access
+            std::map<std::pair<int,int>,double> ans;
+            auto partial_iterator = partials.begin();
+            for (int position{}, i{}; i!=N-1; ++i) {
+                for (int j{i+1}; j!=N; ++j, ++position) {
+                    ans[std::make_pair(i,j)] = partial_iterator->compute();
+                    ++partial_iterator;
+                }
+            }
+            return ans;
+        }
+    };
 
 } // namespace math::statistics
 
