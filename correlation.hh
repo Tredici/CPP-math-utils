@@ -111,9 +111,9 @@ namespace math::statistics
                 throw std::runtime_error("Wrong number of columns received, expected "s + std::to_string(N) + " found "s + std::to_string(row.size()));
             }
             auto partial_iterator = partials.begin();
-            for (int position{}, i{}; i!=N-1; ++i) {
-                for (int j{i+1}; j!=N; ++j, ++position) {
-                    partials[position].accumulate(row[i], row[j]);
+            for (int i{}; i!=N-1; ++i) {
+                for (int j{i+1}; j!=N; ++j) {
+                    partial_iterator->accumulate(row[i], row[j]);
                     ++partial_iterator;
                 }
             }
