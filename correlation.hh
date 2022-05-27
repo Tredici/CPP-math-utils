@@ -43,14 +43,14 @@ namespace math::statistics
 
         // Calculate the Pearson Correlation Coefficient
         // with the accumulated data
-        auto compute() const {
+        auto compute() const -> value_type {
             if (count == 0) {
-                return 0.0;
+                return 0;
             }
             const auto num = ( sum_prod - (sum_1*sum_2)/count );
             const auto den = (sum_1_squared - (sum_1*sum_1 / count)) * (sum_2_squared - (sum_2*sum_2 / count));
             // check for div by 0
-            return den ?  num / sqrt( den ) : 0;
+            return den ?  num / std::sqrt( den ) : 0;
         }
 
         // Fastest way to add two more elements
