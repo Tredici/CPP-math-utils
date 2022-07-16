@@ -73,7 +73,7 @@ namespace math::statistics
     };
 
     template <typename T, typename R = T>
-    pcc_partial<R> pearson_correlation_coefficient(const std::vector<T>& v1, const std::vector<T>& v2) {
+    inline pcc_partial<R> pearson_correlation_coefficient(const std::vector<T>& v1, const std::vector<T>& v2) {
         using namespace std::literals;
         pcc_partial<R> ans;
         if (v1.size() != v2.size()) {

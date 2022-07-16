@@ -118,7 +118,7 @@ namespace math::sets
 
 } // namespace math
 
-std::ostream& operator<<(std::ostream& os, const math::sets::couple &p) {
+inline std::ostream& operator<<(std::ostream& os, const math::sets::couple &p) {
     return os << "(" << p.first() << "," << p.second() << ")";
 }
 
