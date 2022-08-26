@@ -92,6 +92,22 @@ namespace math::statistics
         return ans;
     }
 
+    template <typename T, typename R = T>
+    inline pcc_partial<R> pearson_correlation_coefficient(const T* v1, const T* v2, std::size_t size) {
+        pcc_partial<R> ans;
+        for (decltype(size) i{}; i!=size; ++i) {
+            const auto v_1 = v1[i];
+            const auto v_2 = v2[i];
+            ans.sum_1 += v_1;
+            ans.sum_2 += v_2;
+            ans.sum_1_squared += v_1*v_1;
+            ans.sum_2_squared += v_2*v_2;
+            ans.sum_prod += v_1*v_2;
+        }
+        ans.count = size;
+        return ans;
+    }
+
     // This class has been conceived to easily
     // calculate PCC on all pairs of columns in
     // a large dataset
