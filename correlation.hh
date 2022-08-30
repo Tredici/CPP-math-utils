@@ -108,6 +108,27 @@ namespace math::statistics
         return ans;
     }
 
+    // to be used when data are organized by rows and column elements
+    // are not stored consecutively. Scatter should be equal to size(row)
+    template <typename T, typename R = T>
+    inline pcc_partial<R> pearson_correlation_coefficient_scattered(const T* v1, const T* v2, std::size_t size, std::size_t scatter = 1) {
+        pcc_partial<R> ans;
+        if (scatter == 0) {
+            throw std::invalid_argument("Scatter must be graeter than 0");
+        }
+        for (decltype(size) i{}; i!=size; ++i) {
+            const auto v_1 = v1[i*scatter];
+            const auto v_2 = v2[i*scatter];
+            ans.sum_1 += v_1;
+            ans.sum_2 += v_2;
+            ans.sum_1_squared += v_1*v_1;
+            ans.sum_2_squared += v_2*v_2;
+            ans.sum_prod += v_1*v_2;
+        }
+        ans.count = size;
+        return ans;
+    }
+
     // This class has been conceived to easily
     // calculate PCC on all pairs of columns in
     // a large dataset
