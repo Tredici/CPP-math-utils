@@ -25,6 +25,9 @@ namespace math::statistics
         pcc_partial(const pcc_partial<value_type>&) = default;
         pcc_partial(pcc_partial<value_type>&&) = default;
 
+        pcc_partial& operator=(const pcc_partial<value_type>&) = default;
+        pcc_partial& operator=(pcc_partial<value_type>&&) = default;
+
         auto& operator+=(const pcc_partial<value_type>& p) {
             this->count += p.count;
             this->sum_1 += p.sum_1;
@@ -137,11 +140,21 @@ namespace math::statistics
     public:
         using value_type = T;
     private:
+        // number of columns to analyze
         const int N;
-        std::valarray<pcc_partial<value_type>> partials;
+        // it is unnecessary to calculate the mean and the
+        // mean of the squared values of each column once per
+        // pair of columns; it is sufficient to calculate it
+        // just once per column.
+        // for each column
+        std::valarray<value_type> totals;           // sum of element in each column
+        std::valarray<value_type> squared_totals;   // sum of squared element in each column
+        // for each pair of columns - (0,1) (0,2) (0,3) (1,2) (1,3) (2,3)
+        std::valarray<value_type> covariance_total;
+        long long int count{};  // total number of rows
     public:
         multicolumn_pcc_accumulator(int N)
-        : N{N}, partials((N-1)*N/2)
+        : N{N}, totals(N), squared_totals(N), covariance_total((N-1)*N/2)
         {
             if (N < 2) {
                 using namespace std::literals;
@@ -149,18 +162,103 @@ namespace math::statistics
             }
         }
 
+        // count a single row
         auto& accumulate(const std::vector<value_type>& row) {
             if (row.size() != N) {
                 using namespace std::literals;
                 throw std::runtime_error("Wrong number of columns received, expected "s + std::to_string(N) + " found "s + std::to_string(row.size()));
             }
-            auto partial_iterator = std::begin(partials);
+            auto covariance_iterator = std::begin(covariance_total);
+            // first column
             for (int i{}; i!=N-1; ++i) {
+                const auto tmp = row[i];
+                totals[i] += tmp;
+                squared_totals[i] += tmp*tmp;
                 for (int j{i+1}; j!=N; ++j) {
-                    partial_iterator->accumulate(row[i], row[j]);
-                    ++partial_iterator;
+                    *covariance_iterator += tmp*row[j];
+                    ++covariance_iterator;
                 }
             }
+            const auto tmp = row[N-1];
+            totals[N-1] = tmp;
+            squared_totals[N-1] = tmp*tmp;
+            ++count;
+            return *this;
+        }
+
+        // 
+        auto& accumulate(
+            const value_type* matrix,   // matrix containing the chunk to analyze
+            std::size_t rows,           // rows in the matrix
+            std::size_t cols,           // columns in the matrix
+            std::size_t row_offset,     // offset between same index
+                                        // elements of two adjacent rows
+            std::size_t col_offset,     // offset between same index
+                                        // elements of two adjacent column
+            bool by_columns = true      // col elems are consecutive?
+        ) {
+            if (cols != (decltype(cols))N) {
+                using namespace std::literals;
+                throw std::runtime_error("Wrong number of columns received, expected "s + std::to_string(N) + " found "s + std::to_string(cols));
+            }
+            // offset between same index
+            // elements of two adjacent column
+            //const auto col_offset = /*sizeof(value_type) */ (by_columns ? rows : 1);
+            // offset between same index
+            // elements of two adjacent rows
+            //const auto row_offset = /*sizeof(value_type) */ (by_columns ? 1 : cols);
+            {
+                auto column = matrix; // pointer to first element of next column
+                // for each column
+                for (std::size_t c{}; c!=cols; ++c) {
+                    // accumulators
+                    value_type tot{};   // sum(row)
+                    value_type tot2{};  // sum(row.^2)
+                    auto row = column;    // point to first element of the column
+                    // for each row
+                    for (std::size_t r{}; r!=rows; ++r) {
+                        const auto tmp = *row;
+                        tot += tmp;
+                        tot2 += tmp*tmp;
+                        // point to next row
+                        row += row_offset;
+                    }
+                    // store partials - once to limit memory deferencing
+                    totals[c] += tot;
+                    squared_totals[c] += tot2;
+                    // point to next column
+                    column += col_offset;
+                }
+            }
+            // for each couple of columns
+            {
+                std::size_t couple_idx {};
+                // ptr to c1
+                auto column1 = matrix;
+                for (std::size_t c1{}; c1 != cols; ++c1) {
+                    // ptr to c2
+                    auto column2 = column1 + col_offset;
+                    for (std::size_t c2{c1+1}; c2 != cols; ++c2) {
+                        // accumulator
+                        value_type cross{};
+                        // for each couple (col1[i],col2[i])
+                        auto row1 = column1;
+                        auto row2 = column2;
+                        for (std::size_t r{}; r!=rows; ++r) {
+                            cross += (*row1)*(*row2);
+                            // next pair
+                            row1 += row_offset;
+                            row2 += row_offset;
+                        }
+                        // store partial
+                        covariance_total[couple_idx++] += cross;   
+                        column2 += col_offset;
+                    }
+                    column1 += col_offset;
+                }
+            }
+            // +rows rows to be considered to calculate means
+            count += rows;
             return *this;
         }
 
@@ -169,7 +267,11 @@ namespace math::statistics
                 using namespace std::literals;
                 throw std::runtime_error("Size mismatch, this->N = "s + std::to_string(N) + ", other.N = "s + std::to_string(o.N));
             }
-            partials += o.partials;
+            //partials += o.partials;
+            totals += o.totals;
+            squared_totals += o.squared_totals;
+            covariance_total += o.covariance_total;
+            count += o.count;
             return *this;
         }
 
@@ -183,13 +285,38 @@ namespace math::statistics
             return ans;
         }
 
+        // convert content to valarray of pcc_partial to adapt to
+        // existing code.
+        std::valarray<pcc_partial<value_type>> to_pcc_partial_valarray() const {
+            std::valarray<pcc_partial<value_type>> ans(covariance_total.size());
+
+            for (int couple_idx{}, c1{}; c1 != N; ++c1) {
+                const auto totals_c1 = totals[c1];
+                const auto squared_totals_c1 = squared_totals[c1];
+                for (int c2{c1+1}; c2 != N; ++c2) {
+                    // store partial
+                    pcc_partial<value_type> tmp;
+                    tmp.count = count;
+                    tmp.sum_1 = totals_c1;
+                    tmp.sum_2 = totals[c2];
+                    tmp.sum_1_squared = squared_totals_c1;
+                    tmp.sum_2_squared = squared_totals[c2];
+                    tmp.sum_prod = covariance_total[couple_idx];
+                    ans[couple_idx++] = tmp;
+                }
+            }
+
+            return ans;
+        }
+
         // return a map containing all
         auto results() const {
-            // use un'ordered map to sped up data access
+            auto partials = to_pcc_partial_valarray();
+            // use unordered map to sped up data access
             std::map<std::pair<int,int>,value_type> ans;
             auto partial_iterator = std::begin(partials);
-            for (int position{}, i{}; i!=N-1; ++i) {
-                for (int j{i+1}; j!=N; ++j, ++position) {
+            for (int i{}; i!=N-1; ++i) {
+                for (int j{i+1}; j!=N; ++j) {
                     ans[std::make_pair(i,j)] = partial_iterator->compute();
                     ++partial_iterator;
                 }
