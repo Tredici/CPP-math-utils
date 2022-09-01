@@ -262,7 +262,7 @@ namespace math::statistics
             return *this;
         }
 
-        auto& operator+=(const multicolumn_pcc_accumulator& o) {
+        auto& operator+=(const multicolumn_pcc_accumulator<T>& o) {
             if (N != o.N) {
                 using namespace std::literals;
                 throw std::runtime_error("Size mismatch, this->N = "s + std::to_string(N) + ", other.N = "s + std::to_string(o.N));
