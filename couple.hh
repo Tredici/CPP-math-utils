@@ -26,7 +26,7 @@ namespace math::sets
 
         static std::pair<int, int> pair(int n, int i) {
             // candidate supposing al pairs are ok
-            std::pair p{i/n, i%n};
+            std::pair<int, int> p{i/n, i%n};
 
             // first column and no overflow?
             if (p.first == 0 && p.second+1 < n) {
@@ -38,7 +38,7 @@ namespace math::sets
             // reduce problem with recursion
             // [0,1] for new base will be
             // translated to [p[0], p[0]+1]
-            std::pair base(p.first, p.first);
+            std::pair<int, int> base(p.first, p.first);
             // all points in the triangle
             // marked by [p[0], p[0]]
             // must be ignored, others must be
