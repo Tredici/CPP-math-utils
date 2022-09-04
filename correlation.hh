@@ -193,9 +193,8 @@ namespace math::statistics
             std::size_t cols,           // columns in the matrix
             std::size_t row_offset,     // offset between same index
                                         // elements of two adjacent rows
-            std::size_t col_offset,     // offset between same index
+            std::size_t col_offset      // offset between same index
                                         // elements of two adjacent column
-            bool by_columns = true      // col elems are consecutive?
         ) {
             if (cols != (decltype(cols))N) {
                 using namespace std::literals;
